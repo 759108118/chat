@@ -1,20 +1,21 @@
 <template>
     <div id="app">
-        <p id="local-player-name" class="player-name"></p>
-        <div id="local-player" class="player">
-            <div class="call" @click="sharRTC"></div>
-            <div class="answer" @click="Leave"></div>
+        <p id="local-player-name" ref="playername" class="player-name"></p>
+        <div id="local-player" ref="player" class="player">
+            <div v-show="!isStatus" class="call" @click="sharRTC"></div>
+            <div v-show="isStatus" class="answer" @click="Leave"></div>
         </div>
-        <div id="remote-playerlist"></div>
+        <div ref="playlist" id="remote-playerlist"></div>
+
     </div>
 </template>
 <script>
 import AgoraRTC from "agora-rtc-sdk-ng";
-import $ from 'jquery';
 export default {
     name: "App",
     data() {
         return {
+            isStatus: false,
             agoraClient: null, //实例
             localTracks: {
                 //信道
@@ -32,7 +33,7 @@ export default {
         uid: Number,
     },
     mounted() {
-        $(".answer").css("display", "none");
+        // $(".answer").css("display", "none");
         // alert(AgoraRTC.checkSystemRequirements());是否兼容声网
     },
     methods: {
@@ -52,8 +53,7 @@ export default {
         },
         // 获取
         async join() {
-            $(".answer").css("display", "block");
-            $(".call").css("display", "none");
+            this.isStatus = !this.isStatus;
             // 添加事件侦听器以在远程用户发布时播放远程曲目.
             this.agoraClient.on("user-published", this.handleUserPublished);
             this.agoraClient.on("user-unpublished", this.handleUserUnpublished);
@@ -83,11 +83,13 @@ export default {
             delete this.remoteUsers[id];
             console.log("我离开了，请销毁我的Dom结构！~~~");
 
+
             setTimeout(() => {
-                let length = $(".player").length;
-                for (let i = 0; i < length; i++) {
-                    if ($($(".player")[i]).html() == "") {
-                        $($(".player")[i]).parent().remove();
+                var a = document.querySelectorAll(".players")
+                console.log(a.length);
+                for (let i = 0; i < a.length; i++) {
+                    if (a[i].innerHTML == "") {
+                        a[i].parentNode.parentNode.removeChild(a[i].parentNode);
                         console.log("销毁成功");
                     }
                 }
@@ -101,12 +103,14 @@ export default {
             // 订阅远程用户
             await this.agoraClient.subscribe(user, mediaType);
             if (mediaType === "video") {
-                const player = $(`
-            <div class="player-wrapper-id">
-              <div id="player-${uid}" class="player"></div>
-            </div>
-          `);
-                $("#remote-playerlist").append(player);
+                let div = document.createElement("div")
+                let div1 = document.createElement("div")
+                div.setAttribute('class', "player-wrapper-id")
+                div1.setAttribute('id', `player-${uid}`)
+                div1.setAttribute('class', `players`)
+                div.appendChild(div1);
+                // $("#remote-playerlist").append(player);
+                this.$refs.playlist.append(div);
                 user.videoTrack.play(`player-${uid}`);
                 user.audioTrack.play();
             }
@@ -123,13 +127,13 @@ export default {
             this.localTracks.audioTrack.close();
             // remove remote users and player views
             this.remoteUsers = {};
-            $("#remote-playerlist").html("");
+            // $("#remote-playerlist").html("");
+            this.$refs.playlist.innerHTML = "";
             // leave the channel
             await this.agoraClient.leave();
-            $("#local-player-name").text("");
+            // $("#local-player-name").text("");
             console.log("客户离开信道成功");
-            $(".call").css("display", "block");
-            $(".answer").css("display", "none");
+            this.isStatus = !this.isStatus;
         },
     },
 };
@@ -141,6 +145,13 @@ export default {
 }
 
 .player {
+    width: 100%;
+    height: 100%;
+    border: 1px solid red;
+    position: relative;
+}
+
+.players {
     width: 100%;
     height: 100%;
     border: 1px solid red;
