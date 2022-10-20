@@ -19,6 +19,6 @@ export default {
       channel: '11',//频道号
       uid: 8848,//uid必须为数字类型
     }
-  }
+  },
 }
 </script>
